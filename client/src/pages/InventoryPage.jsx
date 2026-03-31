@@ -1,4 +1,5 @@
 import LowStockList from "../components/LowStockList";
+import MiniBarChart from "../components/MiniBarChart";
 import ProductTable from "../components/ProductTable";
 
 export default function InventoryPage({
@@ -8,6 +9,19 @@ export default function InventoryPage({
   setProductForm,
   handleProductSubmit
 }) {
+  const categoryMap = products.reduce((accumulator, product) => {
+    accumulator[product.category] = (accumulator[product.category] || 0) + product.stock;
+    return accumulator;
+  }, {});
+
+  const maxCategoryValue = Math.max(...Object.values(categoryMap), 1);
+  const categoryChartItems = Object.entries(categoryMap).map(([label, value], index) => ({
+    label,
+    value,
+    width: (value / maxCategoryValue) * 100,
+    tone: index % 2 === 0 ? "tone-blue" : "tone-teal"
+  }));
+
   return (
     <main className="page-shell">
       <section className="page-topbar compact-gap">
@@ -17,7 +31,7 @@ export default function InventoryPage({
         </div>
       </section>
 
-      <section className="workspace-grid">
+      <section className="dashboard-grid triple-grid">
         <div className="card form-card">
           <div className="section-heading section-heading-inline">
             <div>
@@ -27,57 +41,19 @@ export default function InventoryPage({
             <p>Capture new items before they enter stock movement.</p>
           </div>
           <form className="form-grid" onSubmit={handleProductSubmit}>
-            <input
-              placeholder="Product name"
-              value={productForm.name}
-              onChange={(event) => setProductForm({ ...productForm, name: event.target.value })}
-              required
-            />
-            <input
-              placeholder="Category"
-              value={productForm.category}
-              onChange={(event) => setProductForm({ ...productForm, category: event.target.value })}
-              required
-            />
-            <input
-              placeholder="SKU"
-              value={productForm.sku}
-              onChange={(event) => setProductForm({ ...productForm, sku: event.target.value })}
-              required
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder="Price"
-              value={productForm.price}
-              onChange={(event) => setProductForm({ ...productForm, price: event.target.value })}
-              required
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder="Stock"
-              value={productForm.stock}
-              onChange={(event) => setProductForm({ ...productForm, stock: event.target.value })}
-              required
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder="Reorder level"
-              value={productForm.reorderLevel}
-              onChange={(event) => setProductForm({ ...productForm, reorderLevel: event.target.value })}
-              required
-            />
+            <input placeholder="Product name" value={productForm.name} onChange={(event) => setProductForm({ ...productForm, name: event.target.value })} required />
+            <input placeholder="Category" value={productForm.category} onChange={(event) => setProductForm({ ...productForm, category: event.target.value })} required />
+            <input placeholder="SKU" value={productForm.sku} onChange={(event) => setProductForm({ ...productForm, sku: event.target.value })} required />
+            <input type="number" min="0" placeholder="Price" value={productForm.price} onChange={(event) => setProductForm({ ...productForm, price: event.target.value })} required />
+            <input type="number" min="0" placeholder="Stock" value={productForm.stock} onChange={(event) => setProductForm({ ...productForm, stock: event.target.value })} required />
+            <input type="number" min="0" placeholder="Reorder level" value={productForm.reorderLevel} onChange={(event) => setProductForm({ ...productForm, reorderLevel: event.target.value })} required />
             <button className="primary-button" type="submit">Save Product</button>
           </form>
         </div>
 
-        <LowStockList
-          items={lowStockItems}
-          title="Restock Queue"
-          description="These products have reached or crossed their reorder threshold."
-        />
+        <LowStockList items={lowStockItems} title="Restock Queue" description="These products have reached or crossed their reorder threshold." />
+
+        <MiniBarChart title="Stock by category" description="Current unit depth grouped by category for faster scanning." items={categoryChartItems} />
       </section>
 
       <ProductTable products={products} />

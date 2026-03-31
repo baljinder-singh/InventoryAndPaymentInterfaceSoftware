@@ -1,4 +1,5 @@
 import LowStockList from "../components/LowStockList";
+import MiniBarChart from "../components/MiniBarChart";
 import SummaryCard from "../components/SummaryCard";
 
 export default function DashboardPage({
@@ -15,6 +16,27 @@ export default function DashboardPage({
   formatCurrency,
   loadData
 }) {
+  const dashboardChartItems = [
+    {
+      label: "Collected",
+      value: summary.collectedAmount || 0,
+      width: Math.max(collectionRate, 10),
+      tone: "tone-teal"
+    },
+    {
+      label: "Pending",
+      value: summary.pendingAmount || 0,
+      width: Math.max(100 - collectionRate, 10),
+      tone: "tone-gold"
+    },
+    {
+      label: "Low stock",
+      value: lowStockItems.length,
+      width: lowStockItems.length ? Math.min(lowStockItems.length * 20, 100) : 12,
+      tone: "tone-rose"
+    }
+  ];
+
   return (
     <main className="page-shell">
       <section className="page-topbar">
@@ -70,33 +92,13 @@ export default function DashboardPage({
       {error ? <div className="error-banner">{error}</div> : null}
 
       <section className="summary-grid">
-        <SummaryCard
-          title="Products"
-          value={loading ? "..." : summary.totalProducts || 0}
-          helper="Active catalog items"
-          accent="accent-blue"
-        />
-        <SummaryCard
-          title="Inventory Value"
-          value={loading ? "..." : formatCurrency(summary.inventoryValue)}
-          helper="Current stock valuation"
-          accent="accent-gold"
-        />
-        <SummaryCard
-          title="Collected Payments"
-          value={loading ? "..." : formatCurrency(summary.collectedAmount)}
-          helper="Completed payment total"
-          accent="accent-green"
-        />
-        <SummaryCard
-          title="Pending Payments"
-          value={loading ? "..." : formatCurrency(summary.pendingAmount)}
-          helper="Awaiting collection"
-          accent="accent-rose"
-        />
+        <SummaryCard title="Products" value={loading ? "..." : summary.totalProducts || 0} helper="Active catalog items" accent="accent-blue" />
+        <SummaryCard title="Inventory Value" value={loading ? "..." : formatCurrency(summary.inventoryValue)} helper="Current stock valuation" accent="accent-gold" />
+        <SummaryCard title="Collected Payments" value={loading ? "..." : formatCurrency(summary.collectedAmount)} helper="Completed payment total" accent="accent-green" />
+        <SummaryCard title="Pending Payments" value={loading ? "..." : formatCurrency(summary.pendingAmount)} helper="Awaiting collection" accent="accent-rose" />
       </section>
 
-      <section className="dashboard-grid">
+      <section className="dashboard-grid triple-grid">
         <LowStockList items={lowStockItems} />
 
         <div className="card insight-card">
@@ -122,6 +124,13 @@ export default function DashboardPage({
             <span style={{ width: `${collectionRate}%` }} />
           </div>
         </div>
+
+        <MiniBarChart
+          title="Cashflow mix"
+          description="A quick visual split between collected, pending, and stock pressure."
+          items={dashboardChartItems}
+          formatter={formatCurrency}
+        />
       </section>
 
       <section className="dashboard-grid bottom-grid">
@@ -149,11 +158,7 @@ export default function DashboardPage({
           </div>
         </div>
 
-        <LowStockList
-          items={lowStockItems.slice(0, 3)}
-          title="Fast Focus"
-          description="Keep an eye on the products that need attention first."
-        />
+        <LowStockList items={lowStockItems.slice(0, 3)} title="Fast Focus" description="Keep an eye on the products that need attention first." />
       </section>
     </main>
   );

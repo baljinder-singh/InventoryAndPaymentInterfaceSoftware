@@ -34,10 +34,10 @@ const createEmptyPaymentForm = () => ({
 });
 
 const navigationItems = [
-  { to: "/dashboard", label: "Dashboard", caption: "Overview and pulse" },
-  { to: "/inventory", label: "Inventory", caption: "Products and stock" },
-  { to: "/payments", label: "Payments", caption: "Collections and invoices" },
-  { to: "/workspace", label: "Workspace", caption: "Quick actions" }
+  { to: "/dashboard", label: "Dashboard", caption: "Overview and pulse", icon: "DB" },
+  { to: "/inventory", label: "Inventory", caption: "Products and stock", icon: "IN" },
+  { to: "/payments", label: "Payments", caption: "Collections and invoices", icon: "PY" },
+  { to: "/workspace", label: "Workspace", caption: "Quick actions", icon: "WS" }
 ];
 
 export default function App() {
@@ -49,6 +49,7 @@ export default function App() {
   const [paymentForm, setPaymentForm] = useState(createEmptyPaymentForm);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   async function loadData() {
     try {
@@ -120,9 +121,7 @@ export default function App() {
 
   const completedPayments = payments.filter((payment) => payment.status === "Completed");
   const pendingPayments = payments.filter((payment) => payment.status === "Pending");
-  const collectionRate = payments.length
-    ? Math.round((completedPayments.length / payments.length) * 100)
-    : 0;
+  const collectionRate = payments.length ? Math.round((completedPayments.length / payments.length) * 100) : 0;
   const totalUnits = products.reduce((total, product) => total + product.stock, 0);
   const recentPayments = payments.slice(0, 4);
   const inventoryHealthLabel = lowStockItems.length ? "Needs attention" : "Healthy";
@@ -152,28 +151,41 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="shell-layout">
+      <div className={`shell-layout ${sidebarCollapsed ? "sidebar-collapsed" : ""}`.trim()}>
         <aside className="sidebar card">
-          <div className="brand-block">
-            <p className="eyebrow">North Star Console</p>
-            <h1>Ops Hub</h1>
-            <span>Inventory and payments</span>
-          </div>
-
-          <nav className="sidebar-nav">
-            {navigationItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `sidebar-link ${isActive ? "active" : ""}`.trim()
-                }
+          <div>
+            <div className="sidebar-header-row">
+              <div className="brand-block">
+                <p className="eyebrow">North Star Console</p>
+                <h1>Ops Hub</h1>
+                <span>Inventory and payments</span>
+              </div>
+              <button
+                className="collapse-button"
+                type="button"
+                onClick={() => setSidebarCollapsed((current) => !current)}
+                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
-                <strong>{item.label}</strong>
-                <span>{item.caption}</span>
-              </NavLink>
-            ))}
-          </nav>
+                {sidebarCollapsed ? ">" : "<"}
+              </button>
+            </div>
+
+            <nav className="sidebar-nav">
+              {navigationItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`.trim()}
+                >
+                  <span className="sidebar-icon">{item.icon}</span>
+                  <div className="sidebar-link-copy">
+                    <strong>{item.label}</strong>
+                    <span>{item.caption}</span>
+                  </div>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
 
           <div className="sidebar-footer">
             <p className="eyebrow">Live state</p>
