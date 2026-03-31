@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { demoUsers, navigationItems } from "./data/auth";
+import { navigationItems } from "./data/auth";
 import DashboardPage from "./pages/DashboardPage";
 import InventoryPage from "./pages/InventoryPage";
 import LoginPage from "./pages/LoginPage";
@@ -50,30 +50,80 @@ function AppContent() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [currentUser, setCurrentUser] = useState(() => {
+  const [session, setSession] = useState(() => {
     const saved = window.localStorage.getItem(SESSION_STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
   });
   const location = useLocation();
+
+  const currentUser = session?.user || null;
+  const authToken = session?.token || "";
+
+  function saveSession(nextSession) {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
+    setSession(nextSession);
+  }
+
+  function clearSession() {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    setSession(null);
+  }
+
+  async function apiRequest(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    };
+
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers
+    });
+
+    if (response.status === 401) {
+      clearSession();
+      throw new Error("Your session expired. Please sign in again.");
+    }
+
+    if (response.status === 403) {
+      throw new Error("You do not have permission to perform this action.");
+    }
+
+    return response;
+  }
 
   async function loadData() {
     try {
       setLoading(true);
       setError("");
 
-      const [dashboardRes, productsRes, paymentsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/dashboard`),
-        fetch(`${API_BASE_URL}/products`),
-        fetch(`${API_BASE_URL}/payments`)
-      ]);
+      const requests = [apiRequest("/dashboard")];
 
-      if (!dashboardRes.ok || !productsRes.ok || !paymentsRes.ok) {
+      if (currentUser?.role === "admin" || currentUser?.role === "inventory_manager") {
+        requests.push(apiRequest("/products"));
+      } else {
+        requests.push(Promise.resolve(null));
+      }
+
+      if (currentUser?.role === "admin" || currentUser?.role === "accountant") {
+        requests.push(apiRequest("/payments"));
+      } else {
+        requests.push(Promise.resolve(null));
+      }
+
+      const [dashboardRes, productsRes, paymentsRes] = await Promise.all(requests);
+
+      if (!dashboardRes.ok || (productsRes && !productsRes.ok) || (paymentsRes && !paymentsRes.ok)) {
         throw new Error("Unable to load application data.");
       }
 
       const dashboardData = await dashboardRes.json();
-      const productData = await productsRes.json();
-      const paymentData = await paymentsRes.json();
+      const productData = productsRes ? await productsRes.json() : [];
+      const paymentData = paymentsRes ? await paymentsRes.json() : [];
 
       setSummary(dashboardData.summary);
       setLowStockItems(dashboardData.lowStockItems);
@@ -95,62 +145,80 @@ function AppContent() {
   async function handleProductSubmit(event) {
     event.preventDefault();
 
-    const response = await fetch(`${API_BASE_URL}/products`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(productForm)
-    });
+    try {
+      const response = await apiRequest("/products", {
+        method: "POST",
+        body: JSON.stringify(productForm)
+      });
 
-    if (response.ok) {
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Unable to save product.");
+      }
+
       setProductForm(emptyProductForm);
       loadData();
+    } catch (submitError) {
+      setError(submitError.message);
     }
   }
 
   async function handlePaymentSubmit(event) {
     event.preventDefault();
 
-    const response = await fetch(`${API_BASE_URL}/payments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(paymentForm)
-    });
+    try {
+      const response = await apiRequest("/payments", {
+        method: "POST",
+        body: JSON.stringify(paymentForm)
+      });
 
-    if (response.ok) {
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Unable to save payment.");
+      }
+
       setPaymentForm(createEmptyPaymentForm());
       loadData();
+    } catch (submitError) {
+      setError(submitError.message);
     }
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault();
     setIsAuthenticating(true);
     setLoginError("");
 
-    const matchedUser = demoUsers.find(
-      (user) => user.email === email.trim().toLowerCase() && user.password === password
-    );
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password
+        })
+      });
 
-    if (!matchedUser) {
-      setLoginError("Invalid email or password. Use one of the demo accounts below.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to sign in.");
+      }
+
+      saveSession(data);
+      setEmail("");
+      setPassword("");
+    } catch (authError) {
+      setLoginError(authError.message);
+    } finally {
       setIsAuthenticating(false);
-      return;
     }
-
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(matchedUser));
-    setCurrentUser(matchedUser);
-    setEmail("");
-    setPassword("");
-    setIsAuthenticating(false);
   }
 
   function handleLogout() {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY);
-    setCurrentUser(null);
+    clearSession();
     setSidebarCollapsed(false);
   }
 

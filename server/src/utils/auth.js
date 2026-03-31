@@ -1,7 +1,11 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "inventory-payment-secret";
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = "8h";
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is required. Set it in server/.env before starting the server.");
+}
 
 export function createAuthToken(user) {
   return jwt.sign(
