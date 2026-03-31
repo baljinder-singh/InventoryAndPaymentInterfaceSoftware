@@ -11,9 +11,7 @@ router.post("/", (req, res) => {
   const { name, category, sku, price, stock, reorderLevel } = req.body;
 
   if (!name || !category || !sku) {
-    return res
-      .status(400)
-      .json({ message: "Name, category, and SKU are required." });
+    return res.status(400).json({ message: "Name, category, and SKU are required." });
   }
 
   const product = {

@@ -1,8 +1,10 @@
 import cors from "cors";
 import express from "express";
+import { store } from "./data/store.js";
+import { requireAuth, requireRole } from "./middleware/authMiddleware.js";
+import authRoutes from "./routes/authRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import { store } from "./data/store.js";
 import { buildSummary } from "./utils/summary.js";
 
 const app = express();
@@ -15,7 +17,9 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/dashboard", (_req, res) => {
+app.use("/api/auth", authRoutes);
+
+app.get("/api/dashboard", requireAuth, (_req, res) => {
   res.json({
     summary: buildSummary(store.products, store.payments),
     lowStockItems: store.products.filter(
@@ -24,8 +28,19 @@ app.get("/api/dashboard", (_req, res) => {
   });
 });
 
-app.use("/api/products", inventoryRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use(
+  "/api/products",
+  requireAuth,
+  requireRole(["admin", "inventory_manager"]),
+  inventoryRoutes
+);
+
+app.use(
+  "/api/payments",
+  requireAuth,
+  requireRole(["admin", "accountant"]),
+  paymentRoutes
+);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
