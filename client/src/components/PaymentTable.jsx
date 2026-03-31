@@ -8,9 +8,12 @@ function formatCurrency(value) {
 
 export default function PaymentTable({ payments }) {
   return (
-    <div className="table-shell card">
-      <div className="section-heading">
-        <h2>Payments</h2>
+    <div className="table-shell card data-card">
+      <div className="section-heading section-heading-inline">
+        <div>
+          <p className="eyebrow">Collections</p>
+          <h2>Payments</h2>
+        </div>
         <p>Monitor invoice collection and payment status.</p>
       </div>
       <table>
@@ -27,7 +30,12 @@ export default function PaymentTable({ payments }) {
         <tbody>
           {payments.map((payment) => (
             <tr key={payment.id}>
-              <td>{payment.invoiceNumber}</td>
+              <td>
+                <div className="table-title-cell">
+                  <strong>{payment.invoiceNumber}</strong>
+                  <span>{payment.id}</span>
+                </div>
+              </td>
               <td>{payment.customerName}</td>
               <td>{formatCurrency(payment.amount)}</td>
               <td>{payment.method}</td>

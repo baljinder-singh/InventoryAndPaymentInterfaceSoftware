@@ -8,9 +8,12 @@ function formatCurrency(value) {
 
 export default function ProductTable({ products }) {
   return (
-    <div className="table-shell card">
-      <div className="section-heading">
-        <h2>Products</h2>
+    <div className="table-shell card data-card">
+      <div className="section-heading section-heading-inline">
+        <div>
+          <p className="eyebrow">Inventory</p>
+          <h2>Products</h2>
+        </div>
         <p>Track SKUs, pricing, and stock availability.</p>
       </div>
       <table>
@@ -27,7 +30,12 @@ export default function ProductTable({ products }) {
         <tbody>
           {products.map((product) => (
             <tr key={product.id}>
-              <td>{product.name}</td>
+              <td>
+                <div className="table-title-cell">
+                  <strong>{product.name}</strong>
+                  <span>{product.id}</span>
+                </div>
+              </td>
               <td>{product.sku}</td>
               <td>{product.category}</td>
               <td>{formatCurrency(product.price)}</td>

@@ -1,9 +1,9 @@
-export default function LowStockList({ items }) {
+export default function LowStockList({ items, title = "Low Stock Alerts", description = "Restock these items soon to avoid order delays." }) {
   return (
-    <div className="card">
+    <div className="card insight-card">
       <div className="section-heading">
-        <h2>Low Stock Alerts</h2>
-        <p>Restock these items soon to avoid order delays.</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
       </div>
       <div className="alert-list">
         {items.length === 0 ? (
@@ -11,7 +11,10 @@ export default function LowStockList({ items }) {
         ) : (
           items.map((item) => (
             <div className="alert-item" key={item.id}>
-              <strong>{item.name}</strong>
+              <div>
+                <strong>{item.name}</strong>
+                <span className="alert-meta">{item.category} · {item.sku}</span>
+              </div>
               <span>
                 {item.stock} left, reorder at {item.reorderLevel}
               </span>
