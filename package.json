@@ -1,0 +1,16 @@
+{
+  "name": "inventory-and-payment-interface-software",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Starter monorepo for an inventory and payment management system",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "client:dev": "npm --prefix client run dev",
+    "server:dev": "npm --prefix server run dev",
+    "client:build": "npm --prefix client run build",
+    "server:start": "npm --prefix server run start"
+  }
+}
